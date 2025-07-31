@@ -5,7 +5,36 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-// Signup Route
+/**
+ * @swagger
+ * /api/auth/signup:
+ *   post:
+ *     summary: Register a new user (manager or facilitator)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [manager, facilitator]
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       400:
+ *         description: Bad request
+ *       500:
+ *         description: Server error
+ */
 router.post('/signup', async (req, res) => {
   const { name, email, password, role } = req.body;
 
@@ -34,7 +63,33 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// Login Route
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login and get a JWT token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: JWT token returned
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Server error
+ */
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
