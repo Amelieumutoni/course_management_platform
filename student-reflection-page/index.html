@@ -1,0 +1,43 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reflection Page</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 id="title">Reflection</h1>
+      <p id="greeting">Welcome!</p>
+    </header>
+
+    <section>
+      <h2 id="prompt-title">Reflection Questions:</h2>
+      <div class="question">
+        <p id="question1">What did you enjoy most about the course?</p>
+        <textarea id="answer1" placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="question">
+        <p id="question2">What was the most challenging part?</p>
+        <textarea id="answer2" placeholder="Write your answer here..."></textarea>
+      </div>
+      <div class="question">
+        <p id="question3">What could be improved?</p>
+        <textarea id="answer3" placeholder="Write your answer here..."></textarea>
+      </div>
+    </section>
+
+    <footer>
+      <button class="lang-btn" onclick="setLanguage('en')">English</button>
+      <button class="lang-btn" onclick="setLanguage('fr')">Français</button>
+    </footer>
+  </div>
+
+  <script src="translation.js"></script>
+  <script src="index.js"></script>
+  
+</body>
+</html>
