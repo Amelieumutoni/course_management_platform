@@ -1,74 +1,243 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const courseoffering = require('../models/courseoffering');
+const authenticateToken = require('../middleware/auth');      // Your JWT auth middleware
+const authorizeRoles = require('../middleware/role'); 
+const CourseOffering = require('../models/courseoffering');
+         // Middleware to authorize roles like 'manager'
 
 /**
  * @swagger
- * /api/auth/signup:
+ * tags:
+ *   name: CourseOfferings
+ *   description: API endpoints for managing course offerings
+ */
+
+/**
+ * @swagger
+ * /api/course-offerings/:
  *   post:
- *     summary: Register a new user (manager or facilitator)
- *     tags: [Auth]
+ *     summary: Create a new course offering (Manager only)
+ *     tags: [CourseOfferings]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - trimester
+ *               - intake
+ *               - facilitatorId
+ *               - moduleId
+ *               - cohortId
+ *               - classId
+ *               - modeId
  *             properties:
- *               name:
+ *               trimester:
  *                 type: string
- *               email:
+ *                 example: Fall 2025
+ *               intake:
  *                 type: string
- *               password:
- *                 type: string
- *               role:
- *                 type: string
- *                 enum: [manager, facilitator]
+ *                 enum: [HT1, HT2, FT]
+ *                 example: HT1
+ *               facilitatorId:
+ *                 type: integer
+ *                 example: 3
+ *               moduleId:
+ *                 type: integer
+ *                 example: 1
+ *               cohortId:
+ *                 type: integer
+ *                 example: 1
+ *               classId:
+ *                 type: integer
+ *                 example: 1
+ *               modeId:
+ *                 type: integer
+ *                 example: 1
  *     responses:
  *       201:
- *         description: User created successfully
+ *         description: Course offering created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CourseOffering'
  *       400:
- *         description: Bad request
+ *         description: Missing or invalid fields
+ *       401:
+ *         description: Unauthorized
  *       500:
  *         description: Server error
  */
-router.post('/signup', async (req, res) => {
-  const { name, email, password, role } = req.body;
+router.post(
+  '/',
+  authenticateToken,
+  authorizeRoles('manager'),
+  async (req, res) => {
+    try {
+      const {
+        trimester,
+        intake,
+        facilitatorId,
+        moduleId,
+        cohortId,
+        classId,
+        modeId
+      } = req.body;
 
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ error: 'Please provide all fields' });
-  }
+      if (
+        !trimester ||
+        !intake ||
+        !facilitatorId ||
+        !moduleId ||
+        !cohortId ||
+        !classId ||
+        !modeId
+      ) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
 
-  if (!['manager', 'facilitator'].includes(role)) {
-    return res.status(400).json({ error: 'Invalid role' });
-  }
+      const validIntakes = ['HT1', 'HT2', 'FT'];
+      if (!validIntakes.includes(intake)) {
+        return res.status(400).json({ error: `Invalid intake. Allowed: ${validIntakes.join(', ')}` });
+      }
 
-  try {
-    // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email already registered' });
+      const newCourseOffering = await CourseOffering.create({
+        trimester,
+        intake,
+        facilitatorId,
+        moduleId,
+        cohortId,
+        classId,
+        modeId
+      });
+
+      res.status(201).json(newCourseOffering);
+    } catch (error) {
+      console.error('Error creating course offering:', error);
+      res.status(500).json({ error: 'Server error' });
     }
+  }
+);
 
-    // Create user (password hashing handled by model hook)
-    const user = await User.create({ name, email, password, role });
+/**
+ * @swagger
+ * /api/course-offerings/:
+ *   get:
+ *     summary: Get all course offerings with optional filtering
+ *     tags: [CourseOfferings]
+ *     parameters:
+ *       - in: query
+ *         name: trimester
+ *         schema:
+ *           type: string
+ *         description: Filter by trimester
+ *       - in: query
+ *         name: cohortId
+ *         schema:
+ *           type: integer
+ *         description: Filter by cohort ID
+ *       - in: query
+ *         name: intake
+ *         schema:
+ *           type: string
+ *           enum: [HT1, HT2, FT]
+ *         description: Filter by intake
+ *       - in: query
+ *         name: facilitatorId
+ *         schema:
+ *           type: integer
+ *         description: Filter by facilitator ID
+ *       - in: query
+ *         name: modeId
+ *         schema:
+ *           type: integer
+ *         description: Filter by mode ID
+ *     responses:
+ *       200:
+ *         description: List of course offerings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/CourseOffering'
+ *       500:
+ *         description: Server error
+ */
+router.get('/', async (req, res) => {
+  try {
+    const filter = {};
+    const { trimester, cohortId, intake, facilitatorId, modeId } = req.query;
 
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (err) {
-    console.error(err);
+    if (trimester) filter.trimester = trimester;
+    if (cohortId) filter.cohortId = cohortId;
+    if (intake) filter.intake = intake;
+    if (facilitatorId) filter.facilitatorId = facilitatorId;
+    if (modeId) filter.modeId = modeId;
+
+    const offerings = await CourseOffering.findAll({ where: filter });
+    res.json(offerings);
+  } catch (error) {
+    console.error('Error fetching course offerings:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 /**
  * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Login and get a JWT token
- *     tags: [Auth]
+ * /api/course-offerings/{id}:
+ *   get:
+ *     summary: Get course offering by ID
+ *     tags: [CourseOfferings]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course offering ID
+ *     responses:
+ *       200:
+ *         description: Course offering object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CourseOffering'
+ *       404:
+ *         description: Course offering not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/:id', async (req, res) => {
+  try {
+    const offering = await CourseOffering.findByPk(req.params.id);
+    if (!offering) return res.status(404).json({ error: 'Course offering not found' });
+    res.json(offering);
+  } catch (error) {
+    console.error('Error fetching course offering:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/course-offerings/{id}:
+ *   put:
+ *     summary: Update a course offering (Manager only)
+ *     tags: [CourseOfferings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course offering ID
  *     requestBody:
  *       required: true
  *       content:
@@ -76,55 +245,120 @@ router.post('/signup', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               email:
+ *               trimester:
  *                 type: string
- *               password:
+ *               intake:
  *                 type: string
+ *                 enum: [HT1, HT2, FT]
+ *               facilitatorId:
+ *                 type: integer
+ *               moduleId:
+ *                 type: integer
+ *               cohortId:
+ *                 type: integer
+ *               classId:
+ *                 type: integer
+ *               modeId:
+ *                 type: integer
  *     responses:
  *       200:
- *         description: JWT token returned
+ *         description: Updated course offering
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CourseOffering'
  *       400:
  *         description: Bad request
  *       401:
- *         description: Invalid credentials
+ *         description: Unauthorized
+ *       404:
+ *         description: Course offering not found
  *       500:
  *         description: Server error
  */
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+router.put(
+  '/:id',
+  authenticateToken,
+  authorizeRoles('manager'),
+  async (req, res) => {
+    try {
+      const offering = await CourseOffering.findByPk(req.params.id);
+      if (!offering) return res.status(404).json({ error: 'Course offering not found' });
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Please provide email and password' });
-  }
+      // Update fields from body if present
+      const updateFields = [
+        'trimester',
+        'intake',
+        'facilitatorId',
+        'moduleId',
+        'cohortId',
+        'classId',
+        'modeId'
+      ];
+      updateFields.forEach(field => {
+        if (req.body[field] !== undefined) {
+          offering[field] = req.body[field];
+        }
+      });
 
-  try {
-    const user = await User.findOne({ where: { email } });
+      // Optional: Validate intake enum if updated
+      if (req.body.intake) {
+        const validIntakes = ['HT1', 'HT2', 'FT'];
+        if (!validIntakes.includes(req.body.intake)) {
+          return res.status(400).json({ error: `Invalid intake. Allowed: ${validIntakes.join(', ')}` });
+        }
+      }
 
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      await offering.save();
+      res.json(offering);
+    } catch (error) {
+      console.error('Error updating course offering:', error);
+      res.status(500).json({ error: 'Server error' });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Create JWT payload
-    const payload = {
-      id: user.id,
-      role: user.role,
-      name: user.name,
-      email: user.email
-    };
-
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.json({ token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
   }
-});
+);
+
+/**
+ * @swagger
+ * /api/course-offerings/{id}:
+ *   delete:
+ *     summary: Delete a course offering (Manager only)
+ *     tags: [CourseOfferings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Course offering ID
+ *     responses:
+ *       204:
+ *         description: Course offering deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Course offering not found
+ *       500:
+ *         description: Server error
+ */
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeRoles('manager'),
+  async (req, res) => {
+    try {
+      const offering = await CourseOffering.findByPk(req.params.id);
+      if (!offering) return res.status(404).json({ error: 'Course offering not found' });
+
+      await offering.destroy();
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting course offering:', error);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
 
 module.exports = router;
