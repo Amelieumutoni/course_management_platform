@@ -89,12 +89,19 @@ student-reflection-page/ # Module 3 - i18n webpage
 - **Storage**: LocalStorage for language preferences  
 
 ---
-##DOCUMENTS##
+
+
+## ✅ Documents
+ 
 *video link*: https://www.loom.com/share/b840d05459ee4bbba765f692213c757e?sid=6c08146e-6f73-46e9-99c4-454cc7d38844
+
 
 *api documentation*:https://drive.google.com/file/d/1N_w5ThAMNf_6rNbdBt07o1fPyFiMtdBj/view?usp=sharing
 
-*Hosted document module 3 *:
+
+*Hosted document module 3 *:https://amelieumutoni.github.io/Student-reflection-page/
+
+
 
 ## ⚙️ Installation & Setup
 
