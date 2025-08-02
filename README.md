@@ -97,3 +97,51 @@ student-reflection-page/ # Module 3 - i18n webpage
 ```bash
 git clone https://github.com/Aumutoni/course-management-platform.git
 cd course-management-platform
+
+Install Dependencies
+npm install
+Environment Configuration
+Create a .env file in the root directory:
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=Amelieum2003?!
+DB_NAME=course-db
+DB_PORT=5000
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=Amelieum2003
+
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+#Redis Setup
+Start Redis server:
+redis-server
+Make sure Redis is running:
+redis-cli ping
+# → PONG
+Run the App
+
+# Start backend server
+node server.js
+
+# Start notification worker
+node workers/remindercron.js
+
+
+##DOCUMENTS##
+*video link*: https://www.loom.com/share/b840d05459ee4bbba765f692213c757e?sid=6c08146e-6f73-46e9-99c4-454cc7d38844
+
+*api documentation*:https://drive.google.com/file/d/1N_w5ThAMNf_6rNbdBt07o1fPyFiMtdBj/view?usp=sharing
+
+*Hosted document module 3 *:
+
+
+
+
+
+
+
+
